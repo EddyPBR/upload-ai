@@ -16,13 +16,15 @@ type StatusStateType =
   | "converting"
   | "uploading"
   | "generating"
-  | "success";
+  | "success"
+  | "error";
 
 const statusMessages = {
   converting: "Convertendo...",
   generating: "Transcrevendo...",
   uploading: "Carregando...",
   success: "Sucesso!",
+  error: "Falhou!"
 };
 
 export function VideoInputForm(props: IVideoInputFormProps) {
@@ -38,41 +40,45 @@ export function VideoInputForm(props: IVideoInputFormProps) {
       const selectedFile = files[0];
       setVideoFile(selectedFile);
     }
-  }
+  }  
 
   async function handleUploadVideo(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+    try {
+      event.preventDefault();
 
-    const prompt = promptInputRef.current?.value;
+      const prompt = promptInputRef.current?.value;
 
-    if (!videoFile) {
-      return;
+      if (!videoFile) {
+        throw new Error("Missing videoFile");
+      }
+
+      setStatus("converting");
+
+      const audioFile = await convertVideoToAudio(videoFile);
+
+      const data = new FormData();
+  
+      data.append("file", audioFile);
+  
+      setStatus("uploading");
+  
+      const response = await api.post("/videos", data);
+  
+      const videoId = response.data.video.id as string; //uuid
+  
+      setStatus("generating");
+  
+      await api.post(`/videos/${videoId}/transcription`, {
+        prompt,
+      });
+  
+      setStatus("success");
+  
+      props.onVideoUploaded(videoId);
+    } catch (error: any) {
+      console.log(error);
+      setStatus("error");
     }
-
-    // converter o video em áudio
-    setStatus("converting");
-
-    const audioFile = await convertVideoToAudio(videoFile);
-
-    const data = new FormData();
-
-    data.append("file", audioFile);
-
-    setStatus("uploading");
-
-    const response = await api.post("/videos", data);
-
-    const videoId = response.data.video.id as string; //uuid
-
-    setStatus("generating");
-
-    await api.post(`/videos/${videoId}/transcription`, {
-      prompt,
-    });
-
-    setStatus("success");
-
-    props.onVideoUploaded(videoId);
   }
 
   const previewURL = useMemo(() => {
@@ -88,7 +94,7 @@ export function VideoInputForm(props: IVideoInputFormProps) {
         className="relative border flex rounded-md aspect-video cursor-pointer border-dashed text-sm flex-col gap-2 items-center justify-center text-muted-foreground hover:bg-primary/5"
       >
         {previewURL ? (
-          <video src={previewURL} controls={false} className="pointer-events-none absolute inset-0" />
+          <video src={previewURL} controls={false} className="pointer-events-none absolute inset-0 h-44 mx-auto" />
         ) : (
           <>
             <FileVideo className="w-4 h-4" />
@@ -120,9 +126,10 @@ export function VideoInputForm(props: IVideoInputFormProps) {
 
       <Button
         data-success={status === "success"}
-        disabled={status !== "waiting"}
+        data-error={status === "error"}
+        disabled={status !== "waiting" && status !== "error"}
         type="submit"
-        className="w-full data-[success=true]:bg-emerald-400"
+        className="w-full data-[success=true]:bg-emerald-400 data-[error=true]:bg-red-500"
       >
         {status === "waiting" ? (
           <>

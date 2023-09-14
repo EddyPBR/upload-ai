@@ -14,11 +14,29 @@ import { Slider } from "./components/ui/slider";
 import { VideoInputForm } from "./components/video-input-form";
 import { PromptSelect } from "./components/prompt-select";
 import { useState } from "react";
+import { useCompletion } from "ai/react";
 
 export function App() {
   const [temperature, setTemperature] = useState<number>(0.5);
   const [videoId, setVideoId] = useState<string>("");
-  const [template, setTemplate] = useState<string>("");
+
+  const {
+    input,
+    setInput,
+    handleInputChange,
+    handleSubmit,
+    completion,
+    isLoading,
+  } = useCompletion({
+    api: `${import.meta.env.VITE_API_URL}/ai/complete`,
+    body: {
+      videoId,
+      temperature,
+    },
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -45,11 +63,15 @@ export function App() {
             <Textarea
               className="resize-none p-4 leading-relaxed"
               placeholder="Inclua o prompt para a IA..."
+              value={input}
+              onChange={handleInputChange}
             />
+
             <Textarea
               className="resize-none p-4 leading-relaxed"
               placeholder="Resultado gerado pela IA"
               readOnly
+              value={completion}
             />
           </div>
 
@@ -66,11 +88,11 @@ export function App() {
 
           <Separator />
 
-          <form className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label>Prompt</Label>
               <PromptSelect
-                onPromptSelected={(template) => setTemplate(template)}
+                onPromptSelected={(template) => setInput(template)}
               />
             </div>
 
@@ -108,7 +130,7 @@ export function App() {
 
             <Separator />
 
-            <Button type="submit" className="w-full">
+            <Button disabled={isLoading} type="submit" className="w-full">
               Executar
               <Wand2 className="w-4 h-4 ml-2" />
             </Button>
