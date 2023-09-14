@@ -32,7 +32,19 @@ Open your terminal and change the directory to the "web" directory of this proje
 cd web
 ```
 
-### Step 2: Install Dependencies
+### Step 2: Create a .env File
+
+Create a .env file based on the provided .env.example file inside the "/api" directory. You can do this manually or by using the terminal:
+
+```shell
+cp .env.example .env
+```
+
+Edit the .env file and set the following environment variables:
+
+VITE_API_URL: The url of the api running on.
+
+### Step 3: Install Dependencies
 
 Next, use "pnpm" to install the project dependencies. Make sure you are in the "web" directory when you run this command:
 
@@ -40,7 +52,7 @@ Next, use "pnpm" to install the project dependencies. Make sure you are in the "
 pnpm install
 ```
 
-### Step 3: Start the Development Server
+### Step 4: Start the Development Server
 
 Once the dependencies are installed, you can start the development server to run the frontend:
 
